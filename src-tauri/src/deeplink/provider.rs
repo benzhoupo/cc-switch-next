@@ -148,6 +148,7 @@ pub(crate) fn build_provider_from_request(
         AppType::OpenCode => build_opencode_settings(request),
         AppType::OpenClaw => build_additive_app_settings(request),
         AppType::Hermes => build_hermes_settings(request),
+        AppType::Omp => build_omp_settings(request),
     };
 
     // Build usage script configuration if provided
@@ -526,6 +527,39 @@ fn build_hermes_settings(request: &DeepLinkImportRequest) -> serde_json::Value {
     }
 
     config.insert("api_mode".to_string(), json!("chat_completions"));
+
+    if let Some(model) = &request.model {
+        config.insert(
+            "models".to_string(),
+            json!([{ "id": model, "name": model }]),
+        );
+    }
+
+    json!(config)
+}
+
+/// Build Omp provider settings (camelCase YAML-native fields).
+///
+/// Omp's provider entries use `baseUrl` / `apiKey` / `api` (camelCase)
+/// to match the omp models.yml format.
+fn build_omp_settings(request: &DeepLinkImportRequest) -> serde_json::Value {
+    let endpoint = get_primary_endpoint(request);
+
+    let mut config = serde_json::Map::new();
+
+    if let Some(name) = request.name.as_deref().filter(|s| !s.is_empty()) {
+        config.insert("name".to_string(), json!(name));
+    }
+
+    if !endpoint.is_empty() {
+        config.insert("baseUrl".to_string(), json!(endpoint));
+    }
+
+    if let Some(api_key) = &request.api_key {
+        config.insert("apiKey".to_string(), json!(api_key));
+    }
+
+    config.insert("api".to_string(), json!("openai-completions"));
 
     if let Some(model) = &request.model {
         config.insert(

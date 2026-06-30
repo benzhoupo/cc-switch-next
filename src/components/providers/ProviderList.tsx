@@ -115,7 +115,14 @@ export function ProviderList({
   const { data: hermesModelConfig } = useHermesModelConfig(appId === "hermes");
   const hermesCurrentProviderId = hermesModelConfig?.provider;
 
-  // 判断供应商是否已添加到配置（累加模式应用：OpenCode/OpenClaw/Hermes）
+  // omp: 查询 live 配置中的供应商 ID 列表，用于判断 isInConfig
+  const { data: ompLiveIds } = useQuery({
+    queryKey: ["ompLiveProviderIds"],
+    queryFn: () => providersApi.getOmpLiveProviderIds(),
+    enabled: appId === "omp",
+  });
+
+  // 判断供应商是否已添加到配置（累加模式应用：OpenCode/OpenClaw/Hermes/omp）
   const isProviderInConfig = useCallback(
     (providerId: string): boolean => {
       if (appId === "opencode") {
@@ -127,9 +134,12 @@ export function ProviderList({
       if (appId === "hermes") {
         return hermesLiveIds?.includes(providerId) ?? false;
       }
+      if (appId === "omp") {
+        return ompLiveIds?.includes(providerId) ?? false;
+      }
       return true; // 其他应用始终返回 true
     },
-    [appId, opencodeLiveIds, openclawLiveIds, hermesLiveIds],
+    [appId, opencodeLiveIds, openclawLiveIds, hermesLiveIds, ompLiveIds],
   );
 
   // OpenClaw: query default model to determine which provider is default
@@ -220,6 +230,10 @@ export function ProviderList({
       }
       if (appId === "hermes") {
         const count = await providersApi.importHermesFromLive();
+        return count > 0;
+      }
+      if (appId === "omp") {
+        const count = await providersApi.importOmpFromLive();
         return count > 0;
       }
       if (appId === "claude-desktop") {

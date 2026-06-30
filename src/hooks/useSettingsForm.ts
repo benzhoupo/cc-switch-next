@@ -124,6 +124,7 @@ export function useSettingsForm(): UseSettingsFormResult {
       geminiConfigDir: sanitizeDir(data.geminiConfigDir),
       opencodeConfigDir: sanitizeDir(data.opencodeConfigDir),
       openclawConfigDir: sanitizeDir(data.openclawConfigDir),
+      ompConfigDir: sanitizeDir(data.ompConfigDir),
       language: normalizedLanguage,
     };
 
@@ -190,6 +191,7 @@ export function useSettingsForm(): UseSettingsFormResult {
         geminiConfigDir: sanitizeDir(serverData.geminiConfigDir),
         opencodeConfigDir: sanitizeDir(serverData.opencodeConfigDir),
         openclawConfigDir: sanitizeDir(serverData.openclawConfigDir),
+        ompConfigDir: sanitizeDir(serverData.ompConfigDir),
         language: normalizedLanguage,
       };
 

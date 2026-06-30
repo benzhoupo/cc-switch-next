@@ -1,4 +1,4 @@
-//! Live configuration operations
+﻿//! Live configuration operations
 //!
 //! Handles reading and writing live configuration files for Claude, Codex, and Gemini.
 
@@ -12,7 +12,7 @@ use crate::codex_config::{get_codex_auth_path, get_codex_config_path};
 use crate::config::{delete_file, get_claude_settings_path, read_json_file, write_json_file};
 use crate::database::Database;
 use crate::error::AppError;
-use crate::provider::Provider;
+use crate::provider::{Provider, ProviderMeta};
 use crate::services::mcp::McpService;
 use crate::store::AppState;
 
@@ -43,6 +43,8 @@ pub(crate) fn provider_exists_in_live_config(
         AppType::OpenClaw => crate::openclaw_config::get_providers()
             .map(|providers| providers.contains_key(provider_id)),
         AppType::Hermes => crate::hermes_config::get_providers()
+            .map(|providers| providers.contains_key(provider_id)),
+        AppType::Omp => crate::omp_config::get_providers()
             .map(|providers| providers.contains_key(provider_id)),
         _ => Ok(false),
     }
@@ -347,7 +349,7 @@ fn settings_contain_common_config(app_type: &AppType, settings: &Value, snippet:
             }
             _ => false,
         },
-        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => false,
+        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::Omp | AppType::ClaudeDesktop => false,
     }
 }
 
@@ -417,7 +419,7 @@ pub(crate) fn remove_common_config_from_settings(
             }
             Ok(result)
         }
-        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => {
+        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::Omp | AppType::ClaudeDesktop => {
             Ok(settings.clone())
         }
     }
@@ -474,7 +476,7 @@ fn apply_common_config_to_settings(
             }
             Ok(result)
         }
-        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::ClaudeDesktop => {
+        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::Omp | AppType::ClaudeDesktop => {
             Ok(settings.clone())
         }
     }
@@ -883,6 +885,10 @@ pub(crate) fn write_live_snapshot(app_type: &AppType, provider: &Provider) -> Re
             crate::hermes_config::set_provider(&provider.id, provider.settings_config.clone())?;
             log::debug!("Hermes provider '{}' written to live config", provider.id);
         }
+        AppType::Omp => {
+            crate::omp_config::set_provider(&provider.id, provider.settings_config.clone())?;
+            log::debug!("omp provider '{}' written to live config", provider.id);
+        }
     }
     Ok(())
 }
@@ -1132,6 +1138,19 @@ pub fn read_live_settings(app_type: AppType) -> Result<Value, AppError> {
             let config = crate::hermes_config::yaml_to_json(&yaml_config)?;
             Ok(config)
         }
+        AppType::Omp => {
+            let config_path = crate::omp_config::get_omp_config_path();
+            if !config_path.exists() {
+                return Err(AppError::localized(
+                    "omp.config.missing",
+                    "Omp 配置文件不存在",
+                    "Omp configuration file not found",
+                ));
+            }
+            let yaml_config = crate::omp_config::read_omp_config()?;
+            let config = crate::hermes_config::yaml_to_json(&yaml_config)?;
+            Ok(config)
+        }
     }
 }
 
@@ -1225,8 +1244,8 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
                 "config": config_obj
             })
         }
-        // OpenCode, OpenClaw and Hermes use additive mode and are handled by early return above
-        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes => {
+        // OpenCode, OpenClaw, Hermes and Omp use additive mode and are handled by early return above
+        AppType::OpenCode | AppType::OpenClaw | AppType::Hermes | AppType::Omp => {
             unreachable!("additive mode apps are handled by early return")
         }
     };
@@ -1393,7 +1412,7 @@ pub(crate) fn remove_opencode_provider_from_live(provider_id: &str) -> Result<()
 /// Import all providers from OpenCode live config to database
 ///
 /// This imports existing providers from ~/.config/opencode/opencode.json
-/// into the CC Switch database. Each provider found will be added to the
+/// into the CC Switch Next database. Each provider found will be added to the
 /// database with is_current set to false.
 pub fn import_opencode_providers_from_live(state: &AppState) -> Result<usize, AppError> {
     use crate::opencode_config;
@@ -1450,7 +1469,7 @@ pub fn import_opencode_providers_from_live(state: &AppState) -> Result<usize, Ap
 /// Import all providers from OpenClaw live config to database
 ///
 /// This imports existing providers from ~/.openclaw/openclaw.json
-/// into the CC Switch database. Each provider found will be added to the
+/// into the CC Switch Next database. Each provider found will be added to the
 /// database with is_current set to false.
 pub fn import_openclaw_providers_from_live(state: &AppState) -> Result<usize, AppError> {
     use crate::openclaw_config;
@@ -1519,7 +1538,7 @@ pub fn import_openclaw_providers_from_live(state: &AppState) -> Result<usize, Ap
 /// Import all providers from Hermes live config to database
 ///
 /// This imports existing providers from ~/.hermes/config.yaml
-/// into the CC Switch database. Each provider found will be added to the
+/// into the CC Switch Next database. Each provider found will be added to the
 /// database with is_current set to false.
 pub fn import_hermes_providers_from_live(state: &AppState) -> Result<usize, AppError> {
     use crate::hermes_config;
@@ -1601,6 +1620,73 @@ pub fn remove_openclaw_provider_from_live(provider_id: &str) -> Result<(), AppEr
     log::info!("OpenClaw provider '{provider_id}' removed from live config");
 
     Ok(())
+}
+
+/// Remove an omp provider from live config
+pub fn remove_omp_provider_from_live(provider_id: &str) -> Result<(), AppError> {
+    use crate::omp_config;
+
+    if !omp_config::get_omp_dir().exists() {
+        log::debug!("omp config directory doesn't exist, skipping removal of '{provider_id}'");
+        return Ok(());
+    }
+
+    omp_config::remove_provider(provider_id)?;
+    log::info!("omp provider '{provider_id}' removed from live config");
+
+    Ok(())
+}
+
+/// Import all providers from omp live config to database
+pub fn import_omp_providers_from_live(state: &AppState) -> Result<usize, AppError> {
+    use crate::omp_config;
+
+    let providers = omp_config::get_typed_providers()?;
+    if providers.is_empty() {
+        return Ok(0);
+    }
+
+    let mut imported = 0;
+    let existing_ids = state.db.get_provider_ids("omp")?;
+
+    for (id, config) in providers {
+        if existing_ids.contains(&id) {
+            log::debug!("omp provider '{id}' already exists in database, skipping");
+            continue;
+        }
+
+        let settings_config = match serde_json::to_value(&config) {
+            Ok(v) => v,
+            Err(e) => {
+                log::warn!("Failed to serialize omp provider '{id}': {e}");
+                continue;
+            }
+        };
+
+        let mut provider = Provider::with_id(
+            id.clone(),
+            config.name.unwrap_or_else(|| id.clone()),
+            settings_config,
+            None,
+        );
+
+        provider.category = Some("custom".to_string());
+
+        if let Some(meta) = &mut provider.meta {
+            meta.live_config_managed = Some(true);
+        } else {
+            provider.meta = Some(ProviderMeta {
+                live_config_managed: Some(true),
+                ..Default::default()
+            });
+        }
+
+        state.db.save_provider("omp", &provider)?;
+        imported += 1;
+        log::debug!("Imported omp provider '{}' from live config", id);
+    }
+
+    Ok(imported)
 }
 
 #[cfg(test)]

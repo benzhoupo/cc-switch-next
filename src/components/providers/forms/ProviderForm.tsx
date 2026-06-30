@@ -50,9 +50,14 @@ import {
   hermesProviderPresets,
   type HermesProviderPreset,
 } from "@/config/hermesProviderPresets";
+import {
+  ompProviderPresets,
+  type OmpProviderPreset,
+} from "@/config/ompProviderPresets";
 import { OpenCodeFormFields } from "./OpenCodeFormFields";
 import { OpenClawFormFields } from "./OpenClawFormFields";
 import { HermesFormFields } from "./HermesFormFields";
+import { OmpFormFields } from "./OmpFormFields";
 import type { UniversalProviderPreset } from "@/config/universalProviderPresets";
 import {
   applyTemplateValues,
@@ -116,6 +121,7 @@ import {
   normalizePricingSource,
 } from "./helpers/opencodeFormUtils";
 import { HERMES_DEFAULT_CONFIG } from "./hooks/useHermesFormState";
+import { OMP_DEFAULT_CONFIG } from "@/config/ompProviderPresets";
 import { resolveManagedAccountId } from "@/lib/authBinding";
 import { useOpenClawLiveProviderIds } from "@/hooks/useOpenClaw";
 import { useHermesLiveProviderIds } from "@/hooks/useHermes";
@@ -128,7 +134,8 @@ type PresetEntry = {
     | GeminiProviderPreset
     | OpenCodeProviderPreset
     | OpenClawProviderPreset
-    | HermesProviderPreset;
+    | HermesProviderPreset
+    | OmpProviderPreset;
 };
 
 const codexApiFormatFromWireApi = (
@@ -407,8 +414,10 @@ function ProviderFormFull({
               ? OPENCODE_DEFAULT_CONFIG
               : appId === "openclaw"
                 ? OPENCLAW_DEFAULT_CONFIG
-                : appId === "hermes"
-                  ? HERMES_DEFAULT_CONFIG
+              : appId === "hermes"
+                ? HERMES_DEFAULT_CONFIG
+                : appId === "omp"
+                  ? OMP_DEFAULT_CONFIG
                   : CLAUDE_DEFAULT_CONFIG,
       icon: initialData?.icon ?? "",
       iconColor: initialData?.iconColor ?? "",
@@ -679,6 +688,11 @@ function ProviderFormFull({
         id: `hermes-${index}`,
         preset,
       }));
+    } else if (appId === "omp") {
+      return ompProviderPresets.map<PresetEntry>((preset, index) => ({
+        id: `omp-${index}`,
+        preset,
+      }));
     }
     return providerPresets
       .filter((p) => !p.hidden)
@@ -886,6 +900,52 @@ function ProviderFormFull({
     isLoading: isHermesLiveProviderIdsLoading,
   } = useHermesLiveProviderIds(appId === "hermes");
 
+  // ── omp live provider ids ─────────────────────────────────────────────
+  const {
+    data: ompLiveProviderIds = [],
+    isLoading: isOmpLiveProviderIdsLoading,
+  } = useQuery({
+    queryKey: ["ompLiveProviderIds"],
+    queryFn: () => providersApi.getOmpLiveProviderIds(),
+    enabled: appId === "omp",
+    staleTime: 30000,
+  });
+
+  // ── omp form state (simple inline tracking) ──────────────────────────
+  const [ompFormState, setOmpFormState] = useState<{
+    baseUrl: string;
+    apiKey: string;
+    api: string;
+    authHeader: boolean;
+    models: import("@/config/ompProviderPresets").OmpModelEntry[];
+  }>(() => {
+    if (appId === "omp" && initialData?.settingsConfig) {
+      try {
+        const config = JSON.parse(
+          typeof initialData.settingsConfig === "string"
+            ? initialData.settingsConfig
+            : JSON.stringify(initialData.settingsConfig),
+        );
+        return {
+          baseUrl: config.baseUrl ?? "",
+          apiKey: config.apiKey ?? "",
+          api: config.api ?? "openai-completions",
+          authHeader: config.authHeader ?? false,
+          models: config.models ?? [],
+        };
+      } catch {
+        // ignore parse errors
+      }
+    }
+    return {
+      baseUrl: "",
+      apiKey: "",
+      api: "openai-completions",
+      authHeader: false,
+      models: [],
+    };
+  });
+
   const additiveExistingProviderKeys = useMemo(() => {
     if (appId === "opencode" && !isAnyOmoCategory) {
       return Array.from(
@@ -918,6 +978,12 @@ function ProviderFormFull({
       );
     }
 
+    if (appId === "omp") {
+      return Array.from(
+        new Set([...ompLiveProviderIds].filter((key) => key !== providerId)),
+      );
+    }
+
     return [];
   }, [
     appId,
@@ -928,6 +994,7 @@ function ProviderFormFull({
     openclawForm.existingOpenclawKeys,
     openclawLiveProviderIds,
     opencodeLiveProviderIds,
+    ompLiveProviderIds,
     providerId,
   ]);
 
@@ -942,12 +1009,16 @@ function ProviderFormFull({
     if (appId === "hermes") {
       return isHermesLiveProviderIdsLoading;
     }
+    if (appId === "omp") {
+      return isOmpLiveProviderIdsLoading;
+    }
     return false;
   }, [
     appId,
     isAnyOmoCategory,
     isEditMode,
     isHermesLiveProviderIdsLoading,
+    isOmpLiveProviderIdsLoading,
     isOpenclawLiveProviderIdsLoading,
     isOpencodeLiveProviderIdsLoading,
   ]);
@@ -963,6 +1034,9 @@ function ProviderFormFull({
     if (appId === "hermes") {
       return hermesLiveProviderIds.includes(providerId);
     }
+    if (appId === "omp") {
+      return ompLiveProviderIds.includes(providerId);
+    }
     return false;
   }, [
     appId,
@@ -971,6 +1045,7 @@ function ProviderFormFull({
     isEditMode,
     openclawLiveProviderIds,
     opencodeLiveProviderIds,
+    ompLiveProviderIds,
     providerId,
   ]);
 
@@ -1118,6 +1193,24 @@ function ProviderFormFull({
         additiveExistingProviderKeys.includes(hermesForm.hermesProviderKey)
       ) {
         toast.error(t("hermes.form.providerKeyDuplicate"));
+        return;
+      }
+    }
+
+    if (appId === "omp") {
+      if (isProviderKeyLockStateLoading) {
+        toast.error(
+          t("providerForm.providerKeyStatusLoading", {
+            defaultValue: "正在加载供应商标识状态，请稍后再试",
+          }),
+        );
+        return;
+      }
+      if (
+        !isProviderKeyLocked &&
+        additiveExistingProviderKeys.includes(values.name)
+      ) {
+        toast.error(t("omp.form.providerKeyDuplicate"));
         return;
       }
     }
@@ -1361,6 +1454,8 @@ function ProviderFormFull({
       payload.providerKey = openclawForm.openclawProviderKey;
     } else if (appId === "hermes") {
       payload.providerKey = hermesForm.hermesProviderKey;
+    } else if (appId === "omp") {
+      payload.providerKey = values.name.trim();
     }
 
     if (isAnyOmoCategory && !payload.presetCategory) {
@@ -1639,6 +1734,15 @@ function ProviderFormFull({
       if (appId === "hermes") {
         hermesForm.resetHermesState();
       }
+      if (appId === "omp") {
+        setOmpFormState({
+          baseUrl: "",
+          apiKey: "",
+          api: "openai-completions",
+          authHeader: false,
+          models: [],
+        });
+      }
       return;
     }
 
@@ -1755,6 +1859,29 @@ function ProviderFormFull({
       const config = preset.settingsConfig;
 
       hermesForm.resetHermesState(config);
+
+      form.reset({
+        name: preset.nameKey ? t(preset.nameKey) : preset.name,
+        websiteUrl: preset.websiteUrl ?? "",
+        settingsConfig: JSON.stringify(config, null, 2),
+        icon: preset.icon ?? "",
+        iconColor: preset.iconColor ?? "",
+      });
+      return;
+    }
+
+    // omp preset handling
+    if (appId === "omp") {
+      const preset = entry.preset as OmpProviderPreset;
+      const config = preset.settingsConfig;
+
+      setOmpFormState({
+        baseUrl: config.baseUrl,
+        apiKey: config.apiKey,
+        api: config.api,
+        authHeader: config.authHeader ?? false,
+        models: config.models ?? [],
+      });
 
       form.reset({
         name: preset.nameKey ? t(preset.nameKey) : preset.name,
@@ -2269,6 +2396,70 @@ function ProviderFormFull({
             />
           )}
 
+          {/* omp 专属字段 */}
+          {appId === "omp" && (
+            <OmpFormFields
+              baseUrl={ompFormState.baseUrl}
+              onBaseUrlChange={(v) => {
+                setOmpFormState((prev) => {
+                  const next = { ...prev, baseUrl: v };
+                  form.setValue(
+                    "settingsConfig",
+                    JSON.stringify(next, null, 2),
+                  );
+                  return next;
+                });
+              }}
+              apiKey={ompFormState.apiKey}
+              onApiKeyChange={(v) => {
+                setOmpFormState((prev) => {
+                  const next = { ...prev, apiKey: v };
+                  form.setValue(
+                    "settingsConfig",
+                    JSON.stringify(next, null, 2),
+                  );
+                  return next;
+                });
+              }}
+              category={category}
+              shouldShowApiKeyLink={false}
+              websiteUrl={form.watch("websiteUrl") ?? ""}
+              api={ompFormState.api}
+              onApiChange={(v) => {
+                setOmpFormState((prev) => {
+                  const next = { ...prev, api: v };
+                  form.setValue(
+                    "settingsConfig",
+                    JSON.stringify(next, null, 2),
+                  );
+                  return next;
+                });
+              }}
+              authHeader={ompFormState.authHeader}
+              onAuthHeaderChange={(v) => {
+                setOmpFormState((prev) => {
+                  const next = { ...prev, authHeader: v };
+                  form.setValue(
+                    "settingsConfig",
+                    JSON.stringify(next, null, 2),
+                  );
+                  return next;
+                });
+              }}
+              models={ompFormState.models}
+              onModelsChange={(models) => {
+                setOmpFormState((prev) => {
+                  const next = { ...prev, models };
+                  form.setValue(
+                    "settingsConfig",
+                    JSON.stringify(next, null, 2),
+                  );
+                  return next;
+                });
+              }}
+            />
+          )}
+
           {/* 配置编辑器：Codex、Claude、Gemini 分别使用不同的编辑器 */}
           {appId === "codex" ? (
             <>
@@ -2357,7 +2548,7 @@ function ProviderFormFull({
               </div>
               {settingsConfigErrorField}
             </>
-          ) : appId === "openclaw" || appId === "hermes" ? (
+          ) : appId === "openclaw" || appId === "hermes" || appId === "omp" ? (
             <>
               <div className="space-y-2">
                 <Label htmlFor="settingsConfig">
@@ -2367,13 +2558,27 @@ function ProviderFormFull({
                   value={form.getValues("settingsConfig")}
                   onChange={(config) => form.setValue("settingsConfig", config)}
                   placeholder={
-                    appId === "hermes"
+                    appId === "omp"
                       ? `{
+  "baseUrl": "https://api.example.com/v1",
+  "apiKey": "your-api-key-here",
+  "api": "openai-completions",
+  "authHeader": true,
+  "models": [
+    {
+      "id": "some-model-id",
+      "name": "My Model",
+      "contextWindow": 128000
+    }
+  ]
+}`
+                      : appId === "hermes"
+                        ? `{
   "name": "my-provider",
   "base_url": "https://api.example.com/v1",
   "api_key": ""
 }`
-                      : `{
+                        : `{
   "baseUrl": "https://api.example.com/v1",
   "apiKey": "your-api-key-here",
   "api": "openai-completions",
@@ -2419,7 +2624,8 @@ function ProviderFormFull({
           {!isAnyOmoCategory &&
             appId !== "opencode" &&
             appId !== "openclaw" &&
-            appId !== "hermes" && (
+            appId !== "hermes" &&
+            appId !== "omp" && (
               <ProviderAdvancedConfig
                 testConfig={testConfig}
                 pricingConfig={pricingConfig}

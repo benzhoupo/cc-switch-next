@@ -1,4 +1,4 @@
-use http::header::{HeaderValue, InvalidHeaderValue};
+﻿use http::header::{HeaderValue, InvalidHeaderValue};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -168,6 +168,11 @@ impl Provider {
             AppType::Hermes => (
                 str_at(settings.get("base_url")),
                 str_at(settings.get("api_key")),
+            ),
+            // Omp (models.yml) flattens credentials at the top level, camelCase.
+            AppType::Omp => (
+                str_at(settings.get("baseUrl")),
+                str_at(settings.get("apiKey")),
             ),
             // OpenClaw (openclaw.json) flattens credentials at the top level, camelCase.
             AppType::OpenClaw => (
@@ -352,7 +357,7 @@ pub enum ClaudeDesktopMode {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ClaudeDesktopModelRoute {
-    /// 真实上游模型名，只保存在 CC Switch 内部，不写入 Claude Desktop profile。
+    /// 真实上游模型名，只保存在 CC Switch Next 内部，不写入 Claude Desktop profile。
     pub model: String,
     /// Claude Desktop 模型菜单显示名；写入 profile 的 `labelOverride`。
     #[serde(rename = "labelOverride", skip_serializing_if = "Option::is_none")]

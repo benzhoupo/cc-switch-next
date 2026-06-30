@@ -42,10 +42,11 @@ export function AddProviderDialog({
   onSubmit,
 }: AddProviderDialogProps) {
   const { t } = useTranslation();
-  // OpenCode and OpenClaw don't support universal providers
+  // OpenCode, OpenClaw, OMP, Hermes and Claude Desktop don't support universal providers
   const showUniversalTab =
     appId !== "opencode" &&
     appId !== "openclaw" &&
+    appId !== "omp" &&
     appId !== "hermes" &&
     appId !== "claude-desktop";
   const [activeTab, setActiveTab] = useState<"app-specific" | "universal">(
@@ -123,7 +124,7 @@ export function AddProviderDialog({
 
       // OpenCode/OpenClaw: pass providerKey for ID generation
       if (
-        (appId === "opencode" || appId === "openclaw" || appId === "hermes") &&
+        (appId === "opencode" || appId === "openclaw" || appId === "omp" || appId === "hermes") &&
         values.providerKey
       ) {
         providerData.providerKey = values.providerKey;
@@ -245,6 +246,10 @@ export function AddProviderDialog({
           if (parsedConfig.base_url) {
             addUrl(parsedConfig.base_url as string);
           }
+        } else if (appId === "omp") {
+          if (parsedConfig.baseUrl) {
+            addUrl(parsedConfig.baseUrl as string);
+          }
         }
 
         const urls = Array.from(urlSet);
@@ -357,7 +362,7 @@ export function AddProviderDialog({
           </TabsContent>
         </Tabs>
       ) : (
-        // OpenCode/OpenClaw: directly show form without tabs
+        // OpenCode/OpenClaw/OMP/Hermes/Claude Desktop: directly show form without tabs
         <ProviderForm
           appId={appId}
           submitLabel={t("common.add")}

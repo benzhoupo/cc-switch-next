@@ -129,6 +129,7 @@ const VALID_APPS: AppId[] = [
   "opencode",
   "openclaw",
   "hermes",
+  "omp",
 ];
 
 const getInitialApp = (): AppId => {
@@ -196,6 +197,7 @@ function App() {
     opencode: true,
     openclaw: true,
     hermes: true,
+    omp: true,
   };
 
   const getFirstVisibleApp = (): AppId => {
@@ -206,6 +208,7 @@ function App() {
     if (visibleApps.opencode) return "opencode";
     if (visibleApps.openclaw) return "openclaw";
     if (visibleApps.hermes) return "hermes";
+    if (visibleApps.omp) return "omp";
     return "claude"; // fallback
   };
 
@@ -224,7 +227,8 @@ function App() {
       sharedFeatureApp !== "opencode" &&
       sharedFeatureApp !== "openclaw" &&
       sharedFeatureApp !== "gemini" &&
-      sharedFeatureApp !== "hermes"
+      sharedFeatureApp !== "hermes" &&
+      sharedFeatureApp !== "omp"
     ) {
       setCurrentView("providers");
     }
@@ -293,7 +297,8 @@ function App() {
     sharedFeatureApp === "opencode" ||
     sharedFeatureApp === "openclaw" ||
     sharedFeatureApp === "gemini" ||
-    sharedFeatureApp === "hermes";
+    sharedFeatureApp === "hermes" ||
+    sharedFeatureApp === "omp";
 
   const {
     addProvider,
@@ -1175,19 +1180,16 @@ function App() {
             ) : (
               <div className="flex items-center gap-2">
                 <div className="relative inline-flex items-center">
-                  <a
-                    href="https://ccswitch.io"
-                    target="_blank"
-                    rel="noreferrer"
+                  <span
                     className={cn(
                       "text-xl font-semibold transition-colors",
                       isProxyRunning && isCurrentAppTakeoverActive
-                        ? "text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
-                        : "text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300",
+                        ? "text-emerald-500"
+                        : "text-blue-500",
                     )}
                   >
-                    CC Switch
-                  </a>
+                    CC Switch Next
+                  </span>
                 </div>
                 <Button
                   variant="ghost"

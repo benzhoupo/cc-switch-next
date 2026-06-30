@@ -25,6 +25,7 @@ const ALL_APPS: AppId[] = [
   "gemini",
   "opencode",
   "openclaw",
+  "omp",
   "hermes",
 ];
 const STORAGE_KEY = "cc-switch-last-app";
@@ -48,6 +49,7 @@ export function AppSwitcher({
     gemini: "gemini",
     opencode: "opencode",
     openclaw: "openclaw",
+    omp: "omp",
     hermes: "hermes",
   };
   const appDisplayName: Record<AppId, string> = {
@@ -57,6 +59,7 @@ export function AppSwitcher({
     gemini: "Gemini",
     opencode: "OpenCode",
     openclaw: "OpenClaw",
+    omp: "omp",
     hermes: "Hermes",
   };
 

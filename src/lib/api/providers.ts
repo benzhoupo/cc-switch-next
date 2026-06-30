@@ -182,6 +182,14 @@ export const providersApi = {
   },
 
   /**
+   * 获取 omp live 配置中的供应商 ID 列表
+   * 用于前端判断供应商是否已添加到 omp models.yml
+   */
+  async getOmpLiveProviderIds(): Promise<string[]> {
+    return await invoke("get_omp_live_provider_ids");
+  },
+
+  /**
    * 从 OpenClaw live 配置导入供应商到数据库
    * OpenClaw 特有功能：由于累加模式，用户可能已在 openclaw.json 中配置供应商
    */
@@ -195,6 +203,14 @@ export const providersApi = {
    */
   async importHermesFromLive(): Promise<number> {
     return await invoke("import_hermes_providers_from_live");
+  },
+
+  /**
+   * 从 omp live 配置导入供应商到数据库
+   * omp 特有功能：由于累加模式，用户可能已在 omp models.yml 中配置供应商
+   */
+  async importOmpFromLive(): Promise<number> {
+    return await invoke("import_omp_providers_from_live");
   },
 };
 

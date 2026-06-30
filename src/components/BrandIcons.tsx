@@ -8,6 +8,7 @@ import ClaudeSvg from "@/icons/extracted/claude.svg?url";
 import OpenAISvg from "@/icons/extracted/openai.svg?url";
 import GeminiSvg from "@/icons/extracted/gemini.svg?url";
 import OpenClawSvg from "@/icons/extracted/claw.svg?url";
+import OmpSvg from "@/icons/extracted/omp.svg?url";
 
 export function ClaudeIcon({ size = 16, className = "" }: IconProps) {
   return (
@@ -56,6 +57,19 @@ export function OpenClawIcon({ size = 16, className = "" }: IconProps) {
       height={size}
       className={className}
       alt="OpenClaw"
+      loading="lazy"
+    />
+  );
+}
+
+export function OmpIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <img
+      src={OmpSvg}
+      width={size}
+      height={size}
+      className={className}
+      alt="omp"
       loading="lazy"
     />
   );

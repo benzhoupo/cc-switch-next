@@ -416,6 +416,13 @@ export const iconMetadata: Record<string, IconMetadata> = {
     keywords: ["hermes", "agent", "nous", "nousresearch"],
     defaultColor: "#000000",
   },
+  omp: {
+    name: "omp",
+    displayName: "omp",
+    category: "ai-provider",
+    keywords: ["omp", "oh my pi", "pi", "coding agent", "terminal"],
+    defaultColor: "#EA580C",
+  },
   packycode: {
     name: "packycode",
     displayName: "PackyCode",

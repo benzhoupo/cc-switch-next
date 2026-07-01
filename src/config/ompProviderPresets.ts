@@ -72,10 +72,10 @@ export const ompProviderPresets: OmpProviderPreset[] = [
       },
       models: [
         {
-          id: "anthropic/claude-sonnet-4-6",
-          name: "Claude Sonnet 4.6",
-          contextWindow: 200000,
-          maxTokens: 16384,
+          id: "anthropic/claude-sonnet-5",
+          name: "Claude Sonnet 5",
+          contextWindow: 1000000,
+          maxTokens: 128000,
           input: ["text", "image"],
         },
         {
@@ -109,10 +109,10 @@ export const ompProviderPresets: OmpProviderPreset[] = [
       authHeader: true,
       models: [
         {
-          id: "claude-sonnet-4-6",
-          name: "Claude Sonnet 4.6",
-          contextWindow: 200000,
-          maxTokens: 64000,
+          id: "claude-sonnet-5",
+          name: "Claude Sonnet 5",
+          contextWindow: 1000000,
+          maxTokens: 128000,
           input: ["text", "image"],
         },
         {

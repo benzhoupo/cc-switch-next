@@ -253,8 +253,8 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
           context_length: 1000000,
         },
         {
-          id: "anthropic/claude-sonnet-4-6",
-          name: "Claude Sonnet 4.6",
+          id: "anthropic/claude-sonnet-5",
+          name: "Claude Sonnet 5",
           context_length: 1000000,
         },
         {

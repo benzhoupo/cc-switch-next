@@ -781,8 +781,8 @@ export const openclawProviderPresets: OpenClawProviderPreset[] = [
           cost: { input: 5, output: 25 },
         },
         {
-          id: "anthropic/claude-sonnet-4.6",
-          name: "Claude Sonnet 4.6",
+          id: "anthropic/claude-sonnet-5",
+          name: "Claude Sonnet 5",
           contextWindow: 1000000,
           cost: { input: 3, output: 15 },
         },
@@ -801,11 +801,11 @@ export const openclawProviderPresets: OpenClawProviderPreset[] = [
     suggestedDefaults: {
       model: {
         primary: "openrouter/anthropic/claude-opus-4.8",
-        fallbacks: ["openrouter/anthropic/claude-sonnet-4.6"],
+        fallbacks: ["openrouter/anthropic/claude-sonnet-5"],
       },
       modelCatalog: {
         "openrouter/anthropic/claude-opus-4.8": { alias: "Opus" },
-        "openrouter/anthropic/claude-sonnet-4.6": { alias: "Sonnet" },
+        "openrouter/anthropic/claude-sonnet-5": { alias: "Sonnet" },
       },
     },
   },
@@ -973,8 +973,8 @@ export const openclawProviderPresets: OpenClawProviderPreset[] = [
           cost: { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
         },
         {
-          id: "anthropic.claude-sonnet-4-6",
-          name: "Claude Sonnet 4.6",
+          id: "anthropic.claude-sonnet-5",
+          name: "Claude Sonnet 5",
           contextWindow: 1000000,
           cost: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
         },

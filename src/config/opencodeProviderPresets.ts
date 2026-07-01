@@ -156,10 +156,10 @@ export const OPENCODE_PRESET_MODEL_VARIANTS: Record<
       modalities: { input: ["text", "image", "pdf"], output: ["text"] },
     },
     {
-      id: "global.anthropic.claude-sonnet-4-6",
-      name: "Claude Sonnet 4.6",
+      id: "global.anthropic.claude-sonnet-5",
+      name: "Claude Sonnet 5",
       contextLimit: 1000000,
-      outputLimit: 64000,
+      outputLimit: 128000,
       modalities: { input: ["text", "image", "pdf"], output: ["text"] },
     },
     {
@@ -929,7 +929,7 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
         setCacheKey: true,
       },
       models: {
-        "anthropic/claude-sonnet-4.6": { name: "Claude Sonnet 4.6" },
+        "anthropic/claude-sonnet-5": { name: "Claude Sonnet 5" },
         "anthropic/claude-opus-4.8": { name: "Claude Opus 4.8" },
       },
     },
@@ -986,8 +986,8 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       },
       models: {
         "global.anthropic.claude-opus-4-8": { name: "Claude Opus 4.8" },
-        "global.anthropic.claude-sonnet-4-6": {
-          name: "Claude Sonnet 4.6",
+        "global.anthropic.claude-sonnet-5": {
+          name: "Claude Sonnet 5",
         },
         "global.anthropic.claude-haiku-4-5-20251001-v1:0": {
           name: "Claude Haiku 4.5",

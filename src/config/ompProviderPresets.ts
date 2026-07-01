@@ -74,8 +74,8 @@ export const ompProviderPresets: OmpProviderPreset[] = [
         {
           id: "anthropic/claude-sonnet-5",
           name: "Claude Sonnet 5",
-          contextWindow: 200000,
-          maxTokens: 16384,
+          contextWindow: 1000000,
+          maxTokens: 128000,
           input: ["text", "image"],
         },
         {
@@ -111,8 +111,8 @@ export const ompProviderPresets: OmpProviderPreset[] = [
         {
           id: "claude-sonnet-5",
           name: "Claude Sonnet 5",
-          contextWindow: 200000,
-          maxTokens: 64000,
+          contextWindow: 1000000,
+          maxTokens: 128000,
           input: ["text", "image"],
         },
         {
